@@ -1,0 +1,4 @@
+id,defect_name,defect_type,charge_state,spin_multiplicity,formation_energy_eV,zpl_energy_eV,symmetry,functional,supercell,structure_file,notes,reference
+1,V_B,vacancy,-1,2,4.32,1.95,C2v,HSE06,6x6x1,structures/example_defect.xyz,Boron monovacancy negatively charged,Doe et al. 2023
+2,V_N,vacancy,0,1,5.10,,C3v,HSE06,6x6x1,,Nitrogen monovacancy neutral,
+3,C_B,substitution,0,2,2.87,4.10,C2v,PBE,8x8x1,,Carbon substituting boron,Smith et al. 2022
