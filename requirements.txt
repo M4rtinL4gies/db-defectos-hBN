@@ -6,3 +6,4 @@ py3Dmol>=2.1
 ase>=3.23
 numpy>=1.26
 scipy>=1.13
+ipython_genutils
