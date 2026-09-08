@@ -3,7 +3,18 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-from utils.data_loader import load_defects, get_structure_path, RELEVANT_COLUMNS
+from utils.data_loader import load_defects, get_structure_path
+
+RELEVANT_COLUMNS = [
+    "id",
+    "defect_name",
+    "defect_type",
+    "charge_state",
+    "spin_multiplicity",
+    "zpl_energy_eV",
+    "symmetry",
+    "structure_file",
+]
 
 st.set_page_config(
     page_title="hBN Defects Database",
