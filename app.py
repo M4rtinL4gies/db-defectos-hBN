@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-from utils.data_loader import load_defects, get_structure_path
+from utils.data_loader import load_defects, get_structure_path, RELEVANT_COLUMNS
 
 st.set_page_config(
     page_title="hBN Defects Database",
@@ -25,15 +25,29 @@ if df.empty:
 # SIDEBAR: FILTROS -------------------------------------------------------------
 st.sidebar.header("Filtros")
 
+    # Búsqueda por nombre
+search_name = st.sidebar.text_input("Buscar por nombre de defecto")
+
     # Categorías
+only_complete = st.sidebar.checkbox("Solo defectos con información completa")
+
 defect_types = sorted(df["defect_type"].dropna().unique())
 selected_types = st.sidebar.multiselect("Tipo de defecto", defect_types, default=defect_types)
 
 charge_states = sorted(df["charge_state"].dropna().unique())
 selected_charges = st.sidebar.multiselect("Estado de carga", charge_states, default=charge_states)
 
-    # Búsqueda por nombre
-search_name = st.sidebar.text_input("Buscar por nombre de defecto")
+zpl_values = df["zpl_energy_eV"].dropna()
+if not zpl_values.empty:
+    zpl_min, zpl_max = float(zpl_values.min()), float(zpl_values.max())
+    selected_zpl_range = st.sidebar.slider(
+        "Rango de ZPL (eV)",
+        min_value=zpl_min,
+        max_value=zpl_max,
+        value=(zpl_min, zpl_max),
+    )
+else:
+    selected_zpl_range = None
 
     # DF filtrado
 filtered = df[
@@ -42,6 +56,13 @@ filtered = df[
 ]
 if search_name:
     filtered = filtered[filtered["defect_name"].str.contains(search_name, case=False, na=False)]
+
+if only_complete:
+    filtered = filtered.dropna(how="any", subset=RELEVANT_COLUMNS)
+
+if selected_zpl_range is not None:
+    low, high = selected_zpl_range
+    filtered = filtered[filtered["zpl_energy_eV"].between(low, high)]
 
     # Número de resultados encontrados
 st.sidebar.markdown(f"**{len(filtered)}** de {len(df)} defectos")
