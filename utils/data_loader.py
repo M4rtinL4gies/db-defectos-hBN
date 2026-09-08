@@ -26,8 +26,16 @@ NUMERIC_COLUMNS = [
     "formation_energy_eV",
     "zpl_energy_eV"
 ]
-
-
+RELEVANT_COLUMNS = [
+    "id",
+    "defect_name",
+    "defect_type",
+    "charge_state",
+    "spin_multiplicity",
+    "zpl_energy_eV",
+    "symmetry",
+    "structure_file"
+]
 
 # FUNCIONES
 @st.cache_data
