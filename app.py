@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import base64
 
 from utils.data_loader import load_defects, get_structure_path, RELEVANT_COLUMNS
 
@@ -11,9 +12,31 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("⚛️ Base de datos de defectos en hBN")
-st.caption("Resultados de simulaciones")
+# TÍTULO -----------------------------------------------------------------------
+with open("assets/logoQOM.png", "rb") as f:
+    logo_izq_b64 = base64.b64encode(f.read()).decode()
+with open("assets/logoPUC.png", "rb") as f:
+    logo_der_b64 = base64.b64encode(f.read()).decode()
 
+st.markdown(f"""
+<div style="display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:1vw;">
+    <div style="display:flex; align-items:center; gap:1.5vw;">
+        <img src="data:image/png;base64,{logo_izq_b64}" style="height:13vw; min-height:20px">
+        <div style="border-left:0.2vw solid #999; height:12vw; min-height:30px;"></div>
+        <div>
+            <div style="font-size:4vw; font-weight:600; line-height:1.2; color:black">Base de datos de defectos en h-BN</div>
+        </div>
+    </div>
+    <img src="data:image/png;base64,{logo_der_b64}" style="width:20vw; min-width:40px; align-self:flex-start; margin-left:10vw;">
+</div>
+""", unsafe_allow_html=True)
+
+
+st.caption("Fondef IDeA Proyecto ID25I10517")
+
+
+
+# CARGA DE DATOS ---------------------------------------------------------------
 df = load_defects()
 
 if df.empty:
