@@ -14,27 +14,39 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CSV_PATH = DATA_DIR / "defects.csv"
 
 REQUIRED_COLUMNS = [
-    "id",
-    "defect_name",
-    "defect_type",
-    "charge_state",
-    "formation_energy_eV",
+    "ID",
+    "Defecto",
+    "Tipo",
+    "Carga"
 ]
 NUMERIC_COLUMNS = [
-    "charge_state",
-    "spin_multiplicity",
-    "formation_energy_eV",
-    "zpl_energy_eV"
+    "Carga",
+    "Mutiplicidad de espín",
+    "ZPL (eV)",
+    "ZPL (nm)",
+    "Factor de HR",
+    "Nº de átomos",
+    "Región de vacío (Å)"
 ]
 RELEVANT_COLUMNS = [
-    "id",
-    "defect_name",
-    "defect_type",
-    "charge_state",
-    "spin_multiplicity",
-    "zpl_energy_eV",
-    "symmetry",
+    "ID",
+    "Defecto",
+    "Tipo",
+    "Carga",
+    "ZPL (eV)",
     "structure_file"
+]
+MAIN_TABLA_COLUMNS = [
+    "ID",
+    "Defecto",
+    "Tipo",
+    "Carga",
+    "Multiplicidad de espín",
+    "Transición de espín",
+    "ZPL (eV)",
+    "ZPL (nm)",
+    "Simetría",
+    "Factor de HR"
 ]
 
 # FUNCIONES
