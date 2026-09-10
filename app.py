@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import base64
+import streamlit.components.v1 as components
 
 from utils.data_loader import load_defects, get_structure_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS
 
@@ -52,7 +53,7 @@ st.sidebar.header("Filtros")
 search_name = st.sidebar.text_input("Buscar por nombre de defecto")
 
     # Categorías
-defect_types = sorted(df["Defecto"].dropna().unique())
+defect_types = sorted(df["Tipo"].dropna().unique())
 selected_types = st.sidebar.multiselect("Tipo de defecto", defect_types, default=defect_types)
 
 charge_states = sorted(df["Carga"].dropna().unique())
@@ -94,7 +95,7 @@ only_complete = st.sidebar.checkbox("Solo defectos con información completa")
 
     # DF filtrado
 filtered = df[
-    df["Defecto"].isin(selected_types)
+    df["Tipo"].isin(selected_types)
     & df["Carga"].isin(selected_charges)
 ]
 if search_name:
@@ -149,7 +150,7 @@ if options.empty:
 choice = st.selectbox("Selecciona un defecto para ver el detalle", options)
 row = filtered.loc[options == choice].iloc[0]
 
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([1, 0.7])
 
 with col1:
     st.markdown(f"### {row['Defecto']} (carga {row['Carga']})")
@@ -168,20 +169,55 @@ with col1:
 with col2:
     structure_path = get_structure_path(row)
     if structure_path is not None:
-        st.markdown("**Estructura**")
-        try:
-            import py3Dmol
-            from stmol import showmol
+        with st.container(border=True):
+            try:
+                with open(structure_path) as f:
+                    xyz_data = f.read()
 
-            with open(structure_path) as f:
-                xyz_data = f.read()
+                # Leyendas
+                elem_colors = {"B": "orange", "N": "blue", "C": "black"}
+                elements_present = sorted(set(
+                    line.split()[0] for line in xyz_data.strip().split("\n")[2:] if line.strip()
+                ))
+                legend_html = "<div style='display:flex; gap:15px; margin-top:5px;'>"
+                for elem in elements_present:
+                    color = elem_colors.get(elem, "black")
+                    legend_html += (
+                        f"<div style='display:flex; align-items:center; gap:5px; align-self:right;'>"
+                        f"<div style='width:12px; height:12px; border-radius:50%; background:{color};'></div>"
+                        f"<span>{elem}</span></div>"
+                    )
+                legend_html += "</div>"
 
-            view = py3Dmol.view(width=400, height=350)
-            view.addModel(xyz_data, "xyz")
-            view.setStyle({"stick": {}, "sphere": {"scale": 0.3}})
-            view.zoomTo()
-            showmol(view, height=350, width=400)
-        except Exception as e:
-            st.info(f"No se pudo renderizar la estructura 3D: {e}")
+                header_col1, header_col2 = st.columns([1, 1])
+                with header_col1:
+                    st.markdown("**Estructura**")
+                with header_col2:
+                    st.markdown(legend_html, unsafe_allow_html=True)
+
+                style_lines = "\n".join(
+                    f'viewer.setStyle({{elem:"{elem}"}}, {{stick:{{radius:0.15, color:"{color}"}}, sphere:{{scale:0.25, color:"{color}"}}}});'
+                    for elem, color in elem_colors.items()
+                )
+
+                # Gráfico con HTML para que se ajuste al tamaño de la ventana
+                html_code = f"""
+                <div style="width:100%; aspect-ratio:4/3; position:relative;">
+                <div id="viewer" style="width:100%; height:100%; position:absolute;"></div>
+                </div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.1.0/3Dmol-min.js"></script>
+                <script>
+                let viewer = $3Dmol.createViewer(document.getElementById("viewer"), {{backgroundColor:"white"}});
+                viewer.addModel(`{xyz_data}`, "xyz");
+                {style_lines}
+                viewer.zoomTo();
+                viewer.render();
+                window.addEventListener("resize", () => {{ viewer.resize(); }});
+                </script>
+                """
+
+                components.html(html_code, height=500, scrolling=False)
+            except Exception as e:
+                st.info(f"No se pudo renderizar la estructura 3D: {e}")
     else:
         st.info("Este defecto aún no tiene archivo de estructura asociado.")

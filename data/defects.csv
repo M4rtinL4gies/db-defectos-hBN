@@ -1,4 +1,4 @@
 ﻿ID,Defecto,Tipo,Carga,Multiplicidad de espín,Transición de espín,ZPL (eV),ZPL (nm),Simetría,Factor de HR,DFT software,Pseudopotenciales,Funcional,Estructura,Tamaño supercelda,N de átomos,Región de vacío (Å),Malla puntos k,Puntos k HSE,structure_file,Notas,Referencias
-1,V_B,vacancy,-1,2,.,1.95,0,C2v,0,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,3x3x1,gamma,structures/example_defect.xyz,Boron monovacancy negatively charged,Doe et al. 2023
-2,V_N,vacancy,0,1,.,0,0,C3v,0,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,3x3x2,gamma,,Nitrogen monovacancy neutral,
-3,C_B,substitution,0,2,.,4.1,0,C2v,0,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,3x3x3,gamma,,Carbon substituting boron,Smith et al. 2022
+1,C_N,Sustitución,0,Doblete,up-up,0,,D3h,,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,18 x 18 x 1,Γ,structures/C_N.xyz,,
+2,C_B,Sustitución,0,Doblete,up-up,0,,D3h,,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,18 x 18 x 1,Γ,structures/C_B.xyz,,
+3,V_B,Vacancia,-1,Triplete,down-down,1.499,827.218,D3h,1.644,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,49,15,6 x 6 x 1,Γ,structures/V_B.xyz,,
