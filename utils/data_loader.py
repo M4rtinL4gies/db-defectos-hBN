@@ -76,12 +76,24 @@ def load_defects(csv_path: Path = CSV_PATH) -> pd.DataFrame:
     return df
 
 
-def get_structure_path(row: pd.Series) -> Path | None:
-    """
-    Devuelve la ruta absoluta al archivo de estructura de un defecto, si existe."""
-
-    value = row.get("structure_file")
+def get_file_path(row: pd.Series, column: str) -> Path | None:
+    """Devuelve la ruta absoluta a un archivo asociado a un defecto (estructura, orbital, etc.), si existe."""
+    value = row.get(column)
     if pd.isna(value) or not str(value).strip():
         return None
     path = DATA_DIR / str(value)
     return path if path.exists() else None
+ 
+ 
+def get_structure_path(row: pd.Series) -> Path | None:
+    """Devuelve la ruta absoluta al archivo de estructura de un defecto, si existe."""
+    return get_file_path(row, "structure_file")
+ 
+ 
+def get_orbital_path(row: pd.Series, orbital: str) -> Path | None:
+    """Devuelve la ruta absoluta al archivo .cube del HOMO o LUMO de un defecto, si existe.
+ 
+    orbital debe ser "homo" o "lumo".
+    """
+    column = f"{orbital.lower()}_file"
+    return get_file_path(row, column)

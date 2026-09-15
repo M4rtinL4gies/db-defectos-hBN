@@ -5,7 +5,7 @@ import plotly.express as px
 import base64
 import streamlit.components.v1 as components
 
-from utils.data_loader import load_defects, get_structure_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS
+from utils.data_loader import load_defects, get_structure_path, get_orbital_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS
 
 st.set_page_config(
     page_title="hBN Defects Database",
@@ -150,23 +150,9 @@ if options.empty:
 choice = st.selectbox("Selecciona un defecto para ver el detalle", options)
 row = filtered.loc[options == choice].iloc[0]
 
-col1, col2 = st.columns([1, 0.7])
+col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
-    st.markdown(f"### {row['Defecto']} (carga {row['Carga']})")
-    st.write(f"**Tipo:** {row['Tipo']}")
-    st.write(f"**Simetría:** {row.get('Simetría', '—')}")
-    st.write(f"**Funcional:** {row.get('Funcional', '—')}")
-    st.write(f"**Supercelda:** {row.get('Estructura', '—')}")
-    st.write(f"**Energía de formación:** {row['ZPL (eV)']} eV")
-    if pd.notna(row.get("ZPL (eV)")):
-        st.write(f"**ZPL:** {row['ZPL (eV)']} eV")
-    if pd.notna(row.get("Notas")):
-        st.write(f"**Notas:** {row['Notas']}")
-    if pd.notna(row.get("Referencias")):
-        st.write(f"**Referencia:** {row['Referencias']}")
-
-with col2:
     structure_path = get_structure_path(row)
     if structure_path is not None:
         with st.container(border=True):
@@ -179,21 +165,17 @@ with col2:
                 elements_present = sorted(set(
                     line.split()[0] for line in xyz_data.strip().split("\n")[2:] if line.strip()
                 ))
-                legend_html = "<div style='display:flex; gap:15px; margin-top:5px;'>"
+                legend_html = "<div style='display:flex; gap:15px; margin-top:5px; justify-content:flex-end;'>"
                 for elem in elements_present:
                     color = elem_colors.get(elem, "black")
                     legend_html += (
-                        f"<div style='display:flex; align-items:center; gap:5px; align-self:right;'>"
+                        f"<div style='display:flex; align-items:center; gap:5px;'>"
                         f"<div style='width:12px; height:12px; border-radius:50%; background:{color};'></div>"
                         f"<span>{elem}</span></div>"
                     )
                 legend_html += "</div>"
 
-                header_col1, header_col2 = st.columns([1, 1])
-                with header_col1:
-                    st.markdown("**Estructura**")
-                with header_col2:
-                    st.markdown(legend_html, unsafe_allow_html=True)
+                st.markdown("**Estructura**")
 
                 style_lines = "\n".join(
                     f'viewer.setStyle({{elem:"{elem}"}}, {{stick:{{radius:0.15, color:"{color}"}}, sphere:{{scale:0.25, color:"{color}"}}}});'
@@ -204,20 +186,205 @@ with col2:
                 html_code = f"""
                 <div style="width:100%; aspect-ratio:4/3; position:relative;">
                 <div id="viewer" style="width:100%; height:100%; position:absolute;"></div>
+                <button onclick="reiniciarVista()" title="Reiniciar vista" style="
+                    position:absolute; top:8px; right:8px; z-index:10;
+                    width:28px; height:28px; padding:0; cursor:pointer;
+                    background:rgba(255,255,255,0.85); border:1px solid #ccc;
+                    border-radius:50%; font-size:1rem; line-height:1;
+                    display:flex; align-items:center; justify-content:center;">
+                ↻
+                </button>
                 </div>
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.1.0/3Dmol-min.js"></script>
                 <script>
                 let viewer = $3Dmol.createViewer(document.getElementById("viewer"), {{backgroundColor:"white"}});
                 viewer.addModel(`{xyz_data}`, "xyz");
-                {style_lines}
+{style_lines}
+                viewer.setHoverable({{}}, true,
+                    function(atom, viewer, event, container) {{
+                        if (!atom.label) {{
+                            atom.label = viewer.addLabel(
+                                `${{atom.elem}} (${{atom.x.toFixed(3)}}, ${{atom.y.toFixed(3)}}, ${{atom.z.toFixed(3)}})`,
+                                {{position: atom, backgroundColor: "black", fontColor: "white", fontSize: 12}}
+                            );
+                        }}
+                    }},
+                    function(atom) {{
+                        if (atom.label) {{
+                            viewer.removeLabel(atom.label);
+                            delete atom.label;
+                        }}
+                    }}
+                );
                 viewer.zoomTo();
+                viewer.setZoomLimits(10, 80);
+                viewer.zoom(1.3);
                 viewer.render();
+                let vistaInicial = viewer.getView();
+
+                function reiniciarVista() {{
+                  viewer.setView(vistaInicial);
+                  viewer.render();
+                }}
+
                 window.addEventListener("resize", () => {{ viewer.resize(); }});
                 </script>
                 """
 
-                components.html(html_code, height=500, scrolling=False)
+                components.html(html_code, height=220, scrolling=False)
+
+                st.markdown(legend_html, unsafe_allow_html=True)
             except Exception as e:
                 st.info(f"No se pudo renderizar la estructura 3D: {e}")
     else:
         st.info("Este defecto aún no tiene archivo de estructura asociado.")
+
+with col2:
+    homo_path = get_orbital_path(row, "homo")
+    structure_path = get_structure_path(row)
+    if homo_path is not None and structure_path is not None:
+        with st.container(border=True):
+            try:
+                with open(structure_path) as f:
+                    xyz_data = f.read()
+                with open(homo_path) as f:
+                    cube_data = f.read()
+
+                elem_colors = {"B": "orange", "N": "blue", "C": "black"}
+                style_lines = "\n".join(
+                    f'viewer.setStyle({{elem:"{elem}"}}, {{stick:{{radius:0.15, color:"{color}"}}, sphere:{{scale:0.25, color:"{color}"}}}});'
+                    for elem, color in elem_colors.items()
+                )
+
+                st.markdown("**HOMO**")
+
+                orbital_legend = (
+                    "<div style='display:flex; gap:15px; margin-top:5px; justify-content:flex-end;'>"
+                    "<div style='display:flex; align-items:center; gap:5px;'>"
+                    "<div style='width:12px; height:12px; border-radius:50%; background:#1f77b4;'></div>"
+                    "<span>-</span></div>"
+                    "<div style='display:flex; align-items:center; gap:5px;'>"
+                    "<div style='width:12px; height:12px; border-radius:50%; background:#d62728;'></div>"
+                    "<span>+</span></div></div>"
+                )
+
+                html_code = f"""
+                <div style="width:100%; aspect-ratio:4/3; position:relative;">
+                <div id="viewer_homo" style="width:100%; height:100%; position:absolute;"></div>
+                <button onclick="reiniciarVista()" title="Reiniciar vista" style="
+                    position:absolute; top:8px; right:8px; z-index:10;
+                    width:28px; height:28px; padding:0; cursor:pointer;
+                    background:rgba(255,255,255,0.85); border:1px solid #ccc;
+                    border-radius:50%; font-size:1rem; line-height:1;
+                    display:flex; align-items:center; justify-content:center;">
+                ↻
+                </button>
+                </div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.1.0/3Dmol-min.js"></script>
+                <script>
+                let viewer = $3Dmol.createViewer(document.getElementById("viewer_homo"), {{backgroundColor:"white"}});
+                viewer.addModel(`{xyz_data}`, "xyz");
+                {style_lines}
+                let voldataHomo = new $3Dmol.VolumeData(`{cube_data}`, "cube");
+                viewer.addIsosurface(voldataHomo, {{isoval: 0.0005, color: "#1f77b4", opacity: 0.8}});
+                viewer.addIsosurface(voldataHomo, {{isoval: -0.0005, color: "#d62728", opacity: 0.9}});
+                viewer.zoomTo();
+                viewer.setZoomLimits(10, 80);
+                viewer.zoom(1.5);
+                viewer.render();
+                let vistaInicial = viewer.getView();
+
+                function reiniciarVista() {{
+                viewer.setView(vistaInicial);
+                viewer.render();
+                }}
+
+                window.addEventListener("resize", () => {{ viewer.resize(); }});
+                </script>
+                """
+
+                components.html(html_code, height=220, scrolling=False)
+                st.markdown(orbital_legend, unsafe_allow_html=True)
+            except Exception as e:
+                st.info(f"No se pudo renderizar el HOMO: {e}")
+    else:
+        st.info("Este defecto aún no tiene archivo de HOMO asociado.")
+
+with col3:
+    lumo_path = get_orbital_path(row, "lumo")
+    structure_path = get_structure_path(row)
+    if lumo_path is not None and structure_path is not None:
+        with st.container(border=True):
+            try:
+                with open(structure_path) as f:
+                    xyz_data = f.read()
+                with open(lumo_path) as f:
+                    cube_data = f.read()
+
+                elem_colors = {"B": "orange", "N": "blue", "C": "black"}
+                style_lines = "\n".join(
+                    f'viewer.setStyle({{elem:"{elem}"}}, {{stick:{{radius:0.15, color:"{color}"}}, sphere:{{scale:0.25, color:"{color}"}}}});'
+                    for elem, color in elem_colors.items()
+                )
+
+                st.markdown("**LUMO**")
+
+                orbital_legend = (
+                    "<div style='display:flex; gap:15px; margin-top:5px; justify-content:flex-end;'>"
+                    "<div style='display:flex; align-items:center; gap:5px;'>"
+                    "<div style='width:12px; height:12px; border-radius:50%; background:#1f77b4;'></div>"
+                    "<span>-</span></div>"
+                    "<div style='display:flex; align-items:center; gap:5px;'>"
+                    "<div style='width:12px; height:12px; border-radius:50%; background:#d62728;'></div>"
+                    "<span>+</span></div></div>"
+                )
+
+                html_code = f"""
+                <div style="width:100%; aspect-ratio:4/3; position:relative;">
+                <div id="viewer_lumo" style="width:100%; height:100%; position:absolute;"></div>
+                <button onclick="reiniciarVista()" title="Reiniciar vista" style="
+                    position:absolute; top:8px; right:8px; z-index:10;
+                    width:28px; height:28px; padding:0; cursor:pointer;
+                    background:rgba(255,255,255,0.85); border:1px solid #ccc;
+                    border-radius:50%; font-size:1rem; line-height:1;
+                    display:flex; align-items:center; justify-content:center;">
+                ↻
+                </button>
+                </div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.1.0/3Dmol-min.js"></script>
+                <script>
+                let viewer = $3Dmol.createViewer(document.getElementById("viewer_lumo"), {{backgroundColor:"white"}});
+                viewer.addModel(`{xyz_data}`, "xyz");
+                {style_lines}
+                let voldataLumo = new $3Dmol.VolumeData(`{cube_data}`, "cube");
+                viewer.addIsosurface(voldataLumo, {{isoval: 0.0005, color: "#1f77b4", opacity: 0.8}});
+                viewer.addIsosurface(voldataLumo, {{isoval: -0.0005, color: "#d62728", opacity: 0.9}});
+                viewer.zoomTo();
+                viewer.setZoomLimits(10, 80);
+                viewer.zoom(1.5);
+                viewer.render();
+                let vistaInicial = viewer.getView();
+
+                function reiniciarVista() {{
+                viewer.setView(vistaInicial);
+                viewer.render();
+                }}
+
+                window.addEventListener("resize", () => {{ viewer.resize(); }});
+                </script>
+                """
+
+                components.html(html_code, height=220, scrolling=False)
+                st.markdown(orbital_legend, unsafe_allow_html=True)
+            except Exception as e:
+                st.info(f"No se pudo renderizar el LUMO: {e}")
+    else:
+        st.info("Este defecto aún no tiene archivo de LUMO asociado.")
+    
+
+st.subheader("Defectos encontrados")
+st.dataframe(
+    filtered[[c for c in MAIN_TABLA_COLUMNS if c in filtered.columns]],
+    use_container_width=True,
+    hide_index=True,
+)

@@ -1,4 +1,4 @@
-﻿ID,Defecto,Tipo,Carga,Multiplicidad de espín,Transición de espín,ZPL (eV),ZPL (nm),Simetría,Factor de HR,DFT software,Pseudopotenciales,Funcional,Estructura,Tamaño supercelda,N de átomos,Región de vacío (Å),Malla puntos k,Puntos k HSE,structure_file,Notas,Referencias
-1,C_N,Sustitución,0,Doblete,up-up,0,,D3h,,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,18 x 18 x 1,Γ,structures/C_N.xyz,,
-2,C_B,Sustitución,0,Doblete,up-up,0,,D3h,,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,18 x 18 x 1,Γ,structures/C_B.xyz,,
-3,V_B,Vacancia,-1,Triplete,down-down,1.499,827.218,D3h,1.644,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,49,15,6 x 6 x 1,Γ,structures/V_B.xyz,,
+﻿ID,Defecto,Tipo,Carga,Multiplicidad de espín,Transición de espín,ZPL (eV),ZPL (nm),Simetría,Factor de HR,DFT software,Pseudopotenciales,Funcional,Estructura,Tamaño supercelda,N de átomos,Región de vacío (Å),Malla puntos k,Puntos k HSE,structure_file,homo_file,lumo_file,Notas,Referencias
+1,C_N,Sustitución,0,Doblete,up-up,0,,D3h,,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,18 x 18 x 1,Γ,structures/C_N.xyz,homo/C_N.cube,lumo/C_N.cube,,
+2,C_B,Sustitución,0,Doblete,up-up,0,,D3h,,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,50,15,18 x 18 x 1,Γ,structures/C_B.xyz,,,,
+3,V_B,Vacancia,-1,Triplete,down-down,1.499,827.218,D3h,1.644,Quantum Espresso,ONCV PBE,PBE GGA + HSE,Monocapa,5x5,49,15,6 x 6 x 1,Γ,structures/V_B.xyz,,,,
