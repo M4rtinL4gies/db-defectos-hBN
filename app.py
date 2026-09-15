@@ -53,6 +53,9 @@ st.sidebar.header("Filtros")
 search_name = st.sidebar.text_input("Buscar por nombre de defecto")
 
     # Categorías
+structure_types = sorted(df["Estructura"].dropna().unique())
+selected_types = st.sidebar.multiselect("Tipo de estructura", structure_types, default=structure_types)
+
 defect_types = sorted(df["Tipo"].dropna().unique())
 selected_types = st.sidebar.multiselect("Tipo de defecto", defect_types, default=defect_types)
 
@@ -115,10 +118,12 @@ st.sidebar.markdown(f"**{len(filtered)}** de {len(df)} defectos")
 
 # TABLA PRINCIPAL --------------------------------------------------------------
 st.subheader("Defectos encontrados")
-st.dataframe(
+evento = st.dataframe(
     filtered[[c for c in MAIN_TABLA_COLUMNS if c in filtered.columns]],
     use_container_width=True,
     hide_index=True,
+    on_select="rerun",
+    selection_mode="single-row",
 )
 
 
@@ -142,16 +147,17 @@ st.dataframe(
 
 # INFORMACIÓN ADICIONAL DEL DEFECTO --------------------------------------------
 st.subheader("Detalle del defecto")
-options = filtered["Defecto"] + " (q=" + filtered["Carga"].astype(str) + ")"
-if options.empty:
-    st.info("No hay defectos que coincidan con los filtros seleccionados.")
+filas_seleccionadas = evento.selection.rows
+
+if not filas_seleccionadas:
+    st.info("Selecciona un defecto en la tabla (marca la casilla a la izquierda de una fila) para ver el detalle.")
     st.stop()
 
-choice = st.selectbox("Selecciona un defecto para ver el detalle", options)
-row = filtered.loc[options == choice].iloc[0]
+row = filtered.iloc[filas_seleccionadas[0]]
 
 col1, col2, col3 = st.columns([1, 1, 1])
 
+# Estructura
 with col1:
     structure_path = get_structure_path(row)
     if structure_path is not None:
@@ -239,6 +245,7 @@ with col1:
     else:
         st.info("Este defecto aún no tiene archivo de estructura asociado.")
 
+# HOMO
 with col2:
     homo_path = get_orbital_path(row, "homo")
     structure_path = get_structure_path(row)
@@ -310,6 +317,7 @@ with col2:
     else:
         st.info("Este defecto aún no tiene archivo de HOMO asociado.")
 
+# LUMO
 with col3:
     lumo_path = get_orbital_path(row, "lumo")
     structure_path = get_structure_path(row)
