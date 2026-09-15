@@ -5,7 +5,7 @@ import plotly.express as px
 import base64
 import streamlit.components.v1 as components
 
-from utils.data_loader import load_defects, get_structure_path, get_orbital_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS
+from utils.data_loader import load_defects, get_structure_path, get_orbital_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS, PARAM_TABLA_COLUMNS
 
 st.set_page_config(
     page_title="hBN Defects Database",
@@ -125,23 +125,6 @@ evento = st.dataframe(
     on_select="rerun",
     selection_mode="single-row",
 )
-
-
-
-# GRÁFICO 1: E de formación por defecto ----------------------------------------
-#if not filtered.empty:
-#    st.subheader("Energía de formación por defecto")
-#    fig = px.scatter(
-#        filtered,
-#        x="defect_name",
-#        y="formation_energy_eV",
-#        color="defect_type",
-#        symbol="charge_state",
-#        hover_data=["functional", "supercell", "reference"],
-#        labels={"formation_energy_eV": "Energía de formación (eV)", "defect_name": "Defecto"},
-#    )
-#    st.plotly_chart(fig, use_container_width=True)
-
 
 
 
@@ -388,11 +371,28 @@ with col3:
                 st.info(f"No se pudo renderizar el LUMO: {e}")
     else:
         st.info("Este defecto aún no tiene archivo de LUMO asociado.")
-    
 
-st.subheader("Defectos encontrados")
-st.dataframe(
-    filtered[[c for c in MAIN_TABLA_COLUMNS if c in filtered.columns]],
-    use_container_width=True,
-    hide_index=True,
-)
+
+col4, col5 = st.columns([1, 2])
+with col4:
+    st.markdown("**Niveles energéticos**")
+
+with col5:
+    st.markdown("**ZPL**")
+
+col6, col7 = st.columns([1, 1])
+
+# Parámetros simulaciones
+with col6:
+    st.markdown("**Parámetros simulaciones**")
+    param_data = pd.DataFrame({
+        "Campo": PARAM_TABLA_COLUMNS,
+        "Valor": [row[c] for c in PARAM_TABLA_COLUMNS],
+    })
+
+    st.dataframe(param_data, hide_index=True, use_container_width=True)
+
+# Referencias
+with col7:
+    with st.container(border=True):
+        st.markdown("**Otros estudios sobre este defecto:**")

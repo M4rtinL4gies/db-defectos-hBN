@@ -39,6 +39,7 @@ RELEVANT_COLUMNS = [
 MAIN_TABLA_COLUMNS = [
     "ID",
     "Defecto",
+    "Estructura",
     "Tipo",
     "Carga",
     "Multiplicidad de espín",
@@ -47,6 +48,18 @@ MAIN_TABLA_COLUMNS = [
     "ZPL (nm)",
     "Simetría",
     "Factor de HR"
+]
+
+PARAM_TABLA_COLUMNS = [
+    "DFT software",
+    "Pseudopotenciales",
+    "Funcional",
+    "Estructura",
+    "Tamaño supercelda",
+    "N de átomos",
+    "Región de vacío (Å)",
+    "Malla puntos k",
+    "Puntos k HSE"
 ]
 
 # FUNCIONES
