@@ -9,6 +9,7 @@ Entrega el archivo de estructura asociado a un defecto, si existe.
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+import ast
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CSV_PATH = DATA_DIR / "defects.csv"
@@ -26,8 +27,11 @@ NUMERIC_COLUMNS = [
     "ZPL (nm)",
     "Factor de HR",
     "Nº de átomos",
-    "Región de vacío (Å)"
+    "Región de vacío (Å)",
+    "VB",
+    "CB"
 ]
+
 RELEVANT_COLUMNS = [
     "ID",
     "Defecto",
@@ -62,6 +66,13 @@ PARAM_TABLA_COLUMNS = [
     "Puntos k HSE"
 ]
 
+LIST_COLUMNS = [
+    "levels up occ", 
+    "levels up unocc",
+    "levels dw occ",
+    "levels dw unocc"
+]
+
 # FUNCIONES
 @st.cache_data
 def load_defects(csv_path: Path = CSV_PATH) -> pd.DataFrame:
@@ -85,6 +96,10 @@ def load_defects(csv_path: Path = CSV_PATH) -> pd.DataFrame:
     for col in NUMERIC_COLUMNS:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    for col in LIST_COLUMNS:
+        if col in df.columns:
+            df[col] = df[col].apply(_parse_list)
 
     return df
 
@@ -110,3 +125,15 @@ def get_orbital_path(row: pd.Series, orbital: str) -> Path | None:
     """
     column = f"{orbital.lower()}_file"
     return get_file_path(row, column)
+
+
+def _parse_list(value):
+    """Convierte un string tipo '[1.2, 2.3, 3.1]' en una lista real de floats.
+    Devuelve lista vacía si está vacío, mal formado, o es NaN."""
+    if pd.isna(value) or not str(value).strip():
+        return []
+    try:
+        parsed = ast.literal_eval(str(value))
+        return [float(x) for x in parsed]
+    except (ValueError, SyntaxError):
+        return []

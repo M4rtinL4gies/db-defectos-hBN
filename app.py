@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import base64
 import streamlit.components.v1 as components
+import plotly.graph_objects as go
 
 from utils.data_loader import load_defects, get_structure_path, get_orbital_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS, PARAM_TABLA_COLUMNS
 
@@ -109,7 +110,9 @@ if only_complete:
 
 if selected_zpl_range is not None:
     low, high = selected_zpl_range
-    filtered = filtered[filtered["ZPL (eV)"].between(low, high)]
+    filtered = filtered[
+    filtered["ZPL (eV)"].between(low, high) | filtered["ZPL (eV)"].isna()
+    ]
 
     # Número de resultados encontrados
 st.sidebar.markdown(f"**{len(filtered)}** de {len(df)} defectos")
@@ -276,8 +279,8 @@ with col2:
                 viewer.addModel(`{xyz_data}`, "xyz");
                 {style_lines}
                 let voldataHomo = new $3Dmol.VolumeData(`{cube_data}`, "cube");
-                viewer.addIsosurface(voldataHomo, {{isoval: 0.0005, color: "#1f77b4", opacity: 0.8}});
-                viewer.addIsosurface(voldataHomo, {{isoval: -0.0005, color: "#d62728", opacity: 0.9}});
+                viewer.addIsosurface(voldataHomo, {{isoval: 0.00015, color: "#d62728", opacity: 0.9}});
+                viewer.addIsosurface(voldataHomo, {{isoval: -0.00015, color: "#1f77b4", opacity: 0.9}});
                 viewer.zoomTo();
                 viewer.setZoomLimits(10, 80);
                 viewer.zoom(1.5);
@@ -348,8 +351,8 @@ with col3:
                 viewer.addModel(`{xyz_data}`, "xyz");
                 {style_lines}
                 let voldataLumo = new $3Dmol.VolumeData(`{cube_data}`, "cube");
-                viewer.addIsosurface(voldataLumo, {{isoval: 0.0005, color: "#1f77b4", opacity: 0.8}});
-                viewer.addIsosurface(voldataLumo, {{isoval: -0.0005, color: "#d62728", opacity: 0.9}});
+                viewer.addIsosurface(voldataLumo, {{isoval: 0.00015, color: "#d62728", opacity: 0.9}});
+                viewer.addIsosurface(voldataLumo, {{isoval: -0.00015, color: "#1f77b4", opacity: 0.9}});
                 viewer.zoomTo();
                 viewer.setZoomLimits(10, 80);
                 viewer.zoom(1.5);
@@ -374,9 +377,148 @@ with col3:
 
 
 col4, col5 = st.columns([1, 2])
+
+# Niveles energéticos
 with col4:
     st.markdown("**Niveles energéticos**")
 
+    vb = row.get("VB")
+    cb = row.get("CB")
+
+    if pd.notna(vb) and pd.notna(cb):
+
+        def dibujar_niveles(fig, niveles, x0, x1, color, simbolo_base, direction, relleno=True, umbral_agrupacion=0.1):
+            if not niveles:
+                return
+
+            # Agrupa niveles consecutivos (una vez ordenados) que estén a menos de "umbral_agrupacion" eV entre sí — cada grupo se reparte lado a lado
+            niveles_ordenados = sorted(niveles)
+            grupos = [[niveles_ordenados[0]]]
+            for n in niveles_ordenados[1:]:
+                if n - grupos[-1][-1] <= umbral_agrupacion:
+                    grupos[-1].append(n)
+                else:
+                    grupos.append([n])
+
+            largo_flecha = 0.3
+            ancho_hueco = 0.02
+
+            for grupo in grupos:
+                k = len(grupo)
+                sub_ancho = (x1 - x0) / k  # cada nivel del grupo se queda con una franja propia
+
+                for i, nivel in enumerate(grupo):
+                    xi0 = x0 + i * sub_ancho
+                    xi1 = xi0 + sub_ancho
+                    x_centro = (xi0 + xi1) / 2
+
+                    fig.add_shape(type="line", x0=xi0, x1=xi1, y0=nivel, y1=nivel,
+                                line=dict(color=color, width=1.5))
+
+                    half = largo_flecha / 2
+                    y_head = nivel + direction * half
+                    y_tail = nivel - direction * half
+
+                    if relleno:
+                        fig.add_shape(type="line", x0=x_centro, x1=x_centro, y0=y_tail, y1=y_head,
+                                    line=dict(color=color, width=5))
+                    else:
+                        fig.add_shape(type="rect",
+                                    x0=x_centro - ancho_hueco / 2, x1=x_centro + ancho_hueco / 2,
+                                    y0=min(y_tail, y_head), y1=max(y_tail, y_head),
+                                    line=dict(color=color, width=1.5), fillcolor="rgba(0,0,0,0)")
+
+                    fig.add_trace(go.Scatter(
+                        x=[x_centro], y=[y_head + direction * 0.045], mode="markers",
+                        marker=dict(symbol=simbolo_base, size=9, color=color,
+                                    line=dict(width=1.5, color=color)),
+                        showlegend=False, hoverinfo="skip",
+                    ))
+
+                    # Capa invisible para hover: cubre la línea del nivel y el cuerpo de la
+                    # flecha, con un ancho generoso para que sea fácil acertar con el mouse
+                    fig.add_trace(go.Scatter(
+                        x=[xi0, xi1, None, x_centro, x_centro],
+                        y=[nivel, nivel, None, y_tail, y_head],
+                        mode="lines",
+                        line=dict(color="rgba(0,0,0,0)", width=14),
+                        hovertemplate=f"{nivel:.3f} eV<extra></extra>",
+                        showlegend=False,
+                    ))
+
+        def flecha_doble(fig, x, y0, y1, texto, color="black", head_margin=0.0):
+            y0_dibujo = y0 + head_margin
+            y1_dibujo = y1 - head_margin
+            fig.add_shape(type="line", x0=x, x1=x, y0=y0_dibujo, y1=y1_dibujo,
+                        line=dict(color=color, width=1, dash="dash"))
+            fig.add_trace(go.Scatter(
+                x=[x, x], y=[y0_dibujo, y1_dibujo], mode="markers",
+                marker=dict(symbol=["triangle-down", "triangle-up"], size=8, color=color),
+                showlegend=False, hoverinfo="skip",
+            ))
+            fig.add_annotation(x=x, y=(y0 + y1) / 2, text=f"{texto} eV",
+                                showarrow=False, textangle=-90,
+                                font=dict(size=13, color=color), xshift=-14)
+
+        # Se grafica relativo a VB, para que VB quede fijo en 0 en el eje Y
+        gap = cb - vb
+        vb0, cb0 = 0.0, gap
+
+        margen = 0.5
+        grosor_banda = 0.3
+        head_margin = 0.1
+
+        x_min, x_max = -0.4, 1.1
+
+        fig_levels = go.Figure()
+
+        fig_levels.add_shape(type="rect", x0=x_min, x1=x_max, y0=vb0 - grosor_banda, y1=vb0, fillcolor="gray", line_width=0)
+        fig_levels.add_shape(type="rect", x0=x_min, x1=x_max, y0=cb0, y1=cb0 + grosor_banda, fillcolor="gray", line_width=0)
+        fig_levels.add_hline(y=vb0, line=dict(color="black", width=1, dash="dash"))
+        fig_levels.add_hline(y=cb0, line=dict(color="black", width=1, dash="dash"))
+
+        # Listas de niveles, ya desplazadas para quedar relativas a VB
+        niveles_up_occ = [n - vb for n in (row.get("levels up occ") or [])]
+        niveles_up_unocc = [n - vb for n in (row.get("levels up unocc") or [])]
+        niveles_down_occ = [n - vb for n in (row.get("levels dw occ") or [])]
+        niveles_down_unocc = [n - vb for n in (row.get("levels dw unocc") or [])]
+
+        # Segmentos más largos y delgados, con más separación entre spin up y down
+        dibujar_niveles(fig_levels, niveles_up_occ, 0.05, 0.42, "#d62728", "triangle-up", direction=1, relleno=True)
+        dibujar_niveles(fig_levels, niveles_up_unocc, 0.05, 0.42, "#d62728", "triangle-up-open", direction=1, relleno=False)
+        dibujar_niveles(fig_levels, niveles_down_occ, 0.58, 0.95, "#1f77b4", "triangle-down", direction=-1, relleno=True)
+        dibujar_niveles(fig_levels, niveles_down_unocc, 0.58, 0.95, "#1f77b4", "triangle-down-open", direction=-1, relleno=False)
+
+        # Flecha del gap completo, a la izquierda
+        flecha_doble(fig_levels, -0.2, vb0, cb0, f"{gap:.3f}", head_margin=head_margin)
+
+        # Una sola transición por spin: del último ocupado (o VB) al primer desocupado (o CB)
+        y0_up = niveles_up_occ[-1] if niveles_up_occ else vb0
+        y1_up = niveles_up_unocc[0] if niveles_up_unocc else cb0
+        flecha_doble(fig_levels, 0.05, y0_up, y1_up, f"{y1_up - y0_up:.3f}",
+                    color="#d62728", head_margin=head_margin)
+
+        y0_down = niveles_down_occ[-1] if niveles_down_occ else vb0
+        y1_down = niveles_down_unocc[0] if niveles_down_unocc else cb0
+        flecha_doble(fig_levels, 0.55, y0_down, y1_down, f"{y1_down - y0_down:.3f}",
+                    color="#1f77b4", head_margin=head_margin)
+
+        fig_levels.update_xaxes(visible=False, range=[x_min, x_max], fixedrange=True)
+        fig_levels.update_yaxes(
+            title="Energía (eV)", visible=True, fixedrange=True,
+            range=[vb0 - margen, cb0 + margen], zeroline=False,
+        )
+        fig_levels.update_layout(
+            height=300, showlegend=False, plot_bgcolor="white",
+            margin=dict(l=60, r=20, t=0, b=0),
+            dragmode=False,
+        )
+
+        st.plotly_chart(fig_levels, use_container_width=True, config={"displayModeBar": False})
+    else:
+        st.info("Este defecto aún no tiene datos de bandas cargados para graficar los niveles.")
+
+# ZPL
 with col5:
     st.markdown("**ZPL**")
 
