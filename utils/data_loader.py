@@ -41,7 +41,6 @@ RELEVANT_COLUMNS = [
     "structure_file"
 ]
 MAIN_TABLA_COLUMNS = [
-    "ID",
     "Defecto",
     "Estructura",
     "Tipo",
@@ -50,6 +49,7 @@ MAIN_TABLA_COLUMNS = [
     "Transición de espín",
     "ZPL (eV)",
     "ZPL (nm)",
+    "Réplica (meV)",
     "Simetría",
     "Factor de HR"
 ]
@@ -70,7 +70,8 @@ LIST_COLUMNS = [
     "levels up occ", 
     "levels up unocc",
     "levels dw occ",
-    "levels dw unocc"
+    "levels dw unocc",
+    "PSB (eV)"
 ]
 
 # FUNCIONES
@@ -125,6 +126,11 @@ def get_orbital_path(row: pd.Series, orbital: str) -> Path | None:
     """
     column = f"{orbital.lower()}_file"
     return get_file_path(row, column)
+
+
+def get_pl_path(row: pd.Series) -> Path | None:
+    """Devuelve la ruta absoluta al archivo de fotoluminiscencia (E vs PL) de un defecto, si existe."""
+    return get_file_path(row, "pl_file")
 
 
 def _parse_list(value):

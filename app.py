@@ -5,8 +5,9 @@ import plotly.express as px
 import base64
 import streamlit.components.v1 as components
 import plotly.graph_objects as go
+import numpy as np
 
-from utils.data_loader import load_defects, get_structure_path, get_orbital_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS, PARAM_TABLA_COLUMNS
+from utils.data_loader import load_defects, get_structure_path, get_orbital_path, get_pl_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS, PARAM_TABLA_COLUMNS
 
 st.set_page_config(
     page_title="hBN Defects Database",
@@ -521,6 +522,66 @@ with col4:
 # ZPL
 with col5:
     st.markdown("**ZPL**")
+    pl_path = get_pl_path(row)
+    if pl_path is not None:
+        try:
+            pl_data = pd.read_csv(pl_path, sep=r"\s+")
+            col_e, col_pl = pl_data.columns[0], pl_data.columns[1]
+
+            fig_pl = go.Figure()
+            fig_pl.add_trace(go.Scatter(
+                x=pl_data[col_e], y=pl_data[col_pl],
+                mode="lines", line=dict(color="#1E50B4", width=2.5),
+            ))
+            fig_pl.update_xaxes(title="Energía (eV)")
+            fig_pl.update_yaxes(title="Intensidad PL (u.a.)")
+            fig_pl.update_layout(
+                height=350, showlegend=False, plot_bgcolor="white",
+                margin=dict(l=60, r=20, t=0, b=0),
+            )
+
+            zpl_val = row.get("ZPL (eV)")
+            if pd.notna(zpl_val):
+                fig_pl.add_shape(type="line", x0=zpl_val, x1=zpl_val, y0=0, y1=pl_data[col_pl].max(), line=dict(color="black", width=1.5, dash="dash"))
+                y_puntos = np.linspace(0, 10, 30)
+                fig_pl.add_annotation(x=zpl_val+0.075, y=0.8, text=f"ZPL = {zpl_val:.3f} eV", showarrow=False, textangle= -90, font=dict(size=16, color="black"))
+
+                fig_pl.update_xaxes(range=[zpl_val - 1.2, zpl_val + 0.4])
+
+            def flecha_doble_horizontal(fig, y, x0, x1, texto, color="black"):
+                """Flecha horizontal punteada con cabezas en ambos extremos, para medir
+                la distancia en eV entre dos picos consecutivos."""
+                fig.add_shape(type="line", x0=x0, x1=x1, y0=y, y1=y,
+                            line=dict(color=color, width=1, dash="dash"))
+                fig.add_trace(go.Scatter(
+                    x=[x0+0.01, x1-0.01], y=[y, y], mode="markers",
+                    marker=dict(symbol=["triangle-left", "triangle-right"], size=8, color=color),
+                    showlegend=False, hoverinfo="skip",
+                ))
+                fig.add_annotation(x=(x0 + x1) / 2, y=y, text=f"{texto} meV",
+                                    showarrow=False, yshift=10,
+                                    font=dict(size=12, color=color))
+
+            psb_peaks = row.get("PSB (eV)") or []
+
+            # Línea vertical + etiqueta para cada peak, mismo estilo que el ZPL
+            for peak in psb_peaks:
+                fig_pl.add_shape(type="line", x0=peak, x1=peak, y0=0, y1=1,
+                                line=dict(color="black", width=1, dash="dash"))
+                fig_pl.add_annotation(x=peak+0.035, y=0.8, text=f"{peak:.3f} eV", showarrow=False, yshift=12, textangle=-90, font=dict(size=14, color="black"))
+
+            # Flechas de distancia entre puntos consecutivos (ZPL incluido como el primero)
+            puntos = sorted(([zpl_val] if pd.notna(zpl_val) else []) + psb_peaks)
+            y_flecha = 0.05
+            for p0, p1 in zip(puntos[:-1], puntos[1:]):
+                flecha_doble_horizontal(fig_pl, y_flecha, p0, p1, f"{(p1 - p0)*1000:.0f}", color="black")
+            
+            st.plotly_chart(fig_pl, use_container_width=True, config={"displayModeBar": False})
+
+        except Exception as e:
+            st.info(f"No se pudo graficar la fotoluminiscencia: {e}")
+    else:
+        st.info("Este defecto aún no tiene datos de fotoluminiscencia asociados.")
 
 col6, col7 = st.columns([1, 1])
 
