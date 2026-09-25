@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 import plotly.graph_objects as go
 import numpy as np
 
-from utils.data_loader import load_defects, get_structure_path, get_orbital_path, get_pl_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS, PARAM_TABLA_COLUMNS
+from utils.data_loader import load_defects, get_file_path, get_structure_path, get_orbital_path, get_pl_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS, PARAM_TABLA_COLUMNS
 
 st.set_page_config(
     page_title="hBN Defects Database",
@@ -234,24 +234,13 @@ with col1:
 
 # HOMO
 with col2:
-    homo_path = get_orbital_path(row, "homo")
-    structure_path = get_structure_path(row)
-    if homo_path is not None and structure_path is not None:
+    homo_image_path = get_file_path(row, "homo_image")
+    if homo_image_path is not None:
         with st.container(border=True):
-            try:
-                with open(structure_path) as f:
-                    xyz_data = f.read()
-                with open(homo_path) as f:
-                    cube_data = f.read()
-
-                elem_colors = {"B": "orange", "N": "blue", "C": "black"}
-                style_lines = "\n".join(
-                    f'viewer.setStyle({{elem:"{elem}"}}, {{stick:{{radius:0.15, color:"{color}"}}, sphere:{{scale:0.25, color:"{color}"}}}});'
-                    for elem, color in elem_colors.items()
-                )
-
+            coltit, colleg = st.columns([1, 1])
+            with coltit:
                 st.markdown("**HOMO**")
-
+            with colleg:
                 orbital_legend = (
                     "<div style='display:flex; gap:15px; margin-top:5px; justify-content:flex-end;'>"
                     "<div style='display:flex; align-items:center; gap:5px;'>"
@@ -261,69 +250,20 @@ with col2:
                     "<div style='width:12px; height:12px; border-radius:50%; background:#d62728;'></div>"
                     "<span>+</span></div></div>"
                 )
-
-                html_code = f"""
-                <div style="width:100%; aspect-ratio:4/3; position:relative;">
-                <div id="viewer_homo" style="width:100%; height:100%; position:absolute;"></div>
-                <button onclick="reiniciarVista()" title="Reiniciar vista" style="
-                    position:absolute; top:8px; right:8px; z-index:10;
-                    width:28px; height:28px; padding:0; cursor:pointer;
-                    background:rgba(255,255,255,0.85); border:1px solid #ccc;
-                    border-radius:50%; font-size:1rem; line-height:1;
-                    display:flex; align-items:center; justify-content:center;">
-                ↻
-                </button>
-                </div>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.1.0/3Dmol-min.js"></script>
-                <script>
-                let viewer = $3Dmol.createViewer(document.getElementById("viewer_homo"), {{backgroundColor:"white"}});
-                viewer.addModel(`{xyz_data}`, "xyz");
-                {style_lines}
-                let voldataHomo = new $3Dmol.VolumeData(`{cube_data}`, "cube");
-                viewer.addIsosurface(voldataHomo, {{isoval: 0.00015, color: "#d62728", opacity: 0.9}});
-                viewer.addIsosurface(voldataHomo, {{isoval: -0.00015, color: "#1f77b4", opacity: 0.9}});
-                viewer.zoomTo();
-                viewer.setZoomLimits(10, 80);
-                viewer.zoom(1.5);
-                viewer.render();
-                let vistaInicial = viewer.getView();
-
-                function reiniciarVista() {{
-                viewer.setView(vistaInicial);
-                viewer.render();
-                }}
-
-                window.addEventListener("resize", () => {{ viewer.resize(); }});
-                </script>
-                """
-
-                components.html(html_code, height=220, scrolling=False)
                 st.markdown(orbital_legend, unsafe_allow_html=True)
-            except Exception as e:
-                st.info(f"No se pudo renderizar el HOMO: {e}")
+            st.image(str(homo_image_path), use_container_width=True)
     else:
-        st.info("Este defecto aún no tiene archivo de HOMO asociado.")
+        st.info("Este defecto aún no tiene imagen de HOMO asociada.")
 
 # LUMO
 with col3:
-    lumo_path = get_orbital_path(row, "lumo")
-    structure_path = get_structure_path(row)
-    if lumo_path is not None and structure_path is not None:
+    lumo_image_path = get_file_path(row, "lumo_image")
+    if lumo_image_path is not None:
         with st.container(border=True):
-            try:
-                with open(structure_path) as f:
-                    xyz_data = f.read()
-                with open(lumo_path) as f:
-                    cube_data = f.read()
-
-                elem_colors = {"B": "orange", "N": "blue", "C": "black"}
-                style_lines = "\n".join(
-                    f'viewer.setStyle({{elem:"{elem}"}}, {{stick:{{radius:0.15, color:"{color}"}}, sphere:{{scale:0.25, color:"{color}"}}}});'
-                    for elem, color in elem_colors.items()
-                )
-
+            coltit, colleg = st.columns([1, 1])
+            with coltit:
                 st.markdown("**LUMO**")
-
+            with colleg:
                 orbital_legend = (
                     "<div style='display:flex; gap:15px; margin-top:5px; justify-content:flex-end;'>"
                     "<div style='display:flex; align-items:center; gap:5px;'>"
@@ -333,48 +273,10 @@ with col3:
                     "<div style='width:12px; height:12px; border-radius:50%; background:#d62728;'></div>"
                     "<span>+</span></div></div>"
                 )
-
-                html_code = f"""
-                <div style="width:100%; aspect-ratio:4/3; position:relative;">
-                <div id="viewer_lumo" style="width:100%; height:100%; position:absolute;"></div>
-                <button onclick="reiniciarVista()" title="Reiniciar vista" style="
-                    position:absolute; top:8px; right:8px; z-index:10;
-                    width:28px; height:28px; padding:0; cursor:pointer;
-                    background:rgba(255,255,255,0.85); border:1px solid #ccc;
-                    border-radius:50%; font-size:1rem; line-height:1;
-                    display:flex; align-items:center; justify-content:center;">
-                ↻
-                </button>
-                </div>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.1.0/3Dmol-min.js"></script>
-                <script>
-                let viewer = $3Dmol.createViewer(document.getElementById("viewer_lumo"), {{backgroundColor:"white"}});
-                viewer.addModel(`{xyz_data}`, "xyz");
-                {style_lines}
-                let voldataLumo = new $3Dmol.VolumeData(`{cube_data}`, "cube");
-                viewer.addIsosurface(voldataLumo, {{isoval: 0.00015, color: "#d62728", opacity: 0.9}});
-                viewer.addIsosurface(voldataLumo, {{isoval: -0.00015, color: "#1f77b4", opacity: 0.9}});
-                viewer.zoomTo();
-                viewer.setZoomLimits(10, 80);
-                viewer.zoom(1.5);
-                viewer.render();
-                let vistaInicial = viewer.getView();
-
-                function reiniciarVista() {{
-                viewer.setView(vistaInicial);
-                viewer.render();
-                }}
-
-                window.addEventListener("resize", () => {{ viewer.resize(); }});
-                </script>
-                """
-
-                components.html(html_code, height=220, scrolling=False)
                 st.markdown(orbital_legend, unsafe_allow_html=True)
-            except Exception as e:
-                st.info(f"No se pudo renderizar el LUMO: {e}")
+            st.image(str(lumo_image_path), use_container_width=True)
     else:
-        st.info("Este defecto aún no tiene archivo de LUMO asociado.")
+        st.info("Este defecto aún no tiene imagen de LUMO asociada.")
 
 
 col4, col5 = st.columns([1, 2])

@@ -25,7 +25,9 @@ NUMERIC_COLUMNS = [
     "Mutiplicidad de espín",
     "ZPL (eV)",
     "ZPL (nm)",
+    "1er PSB (meV)",
     "Factor de HR",
+    "Factor de intercambio",
     "Nº de átomos",
     "Región de vacío (Å)",
     "VB",
@@ -49,7 +51,7 @@ MAIN_TABLA_COLUMNS = [
     "Transición de espín",
     "ZPL (eV)",
     "ZPL (nm)",
-    "Réplica (meV)",
+    "1er PSB (meV)",
     "Simetría",
     "Factor de HR"
 ]
@@ -58,6 +60,7 @@ PARAM_TABLA_COLUMNS = [
     "DFT software",
     "Pseudopotenciales",
     "Funcional",
+    "Factor de intercambio",
     "Estructura",
     "Tamaño supercelda",
     "N de átomos",
@@ -120,7 +123,7 @@ def get_structure_path(row: pd.Series) -> Path | None:
  
  
 def get_orbital_path(row: pd.Series, orbital: str) -> Path | None:
-    """Devuelve la ruta absoluta al archivo .cube del HOMO o LUMO de un defecto, si existe.
+    """Devuelve la ruta absoluta al archivo .png del HOMO o LUMO de un defecto, si existe.
  
     orbital debe ser "homo" o "lumo".
     """
