@@ -6,6 +6,7 @@ import base64
 import streamlit.components.v1 as components
 import plotly.graph_objects as go
 import numpy as np
+import re
 
 from utils.data_loader import load_defects, get_file_path, get_structure_path, get_orbital_path, get_pl_path, RELEVANT_COLUMNS, MAIN_TABLA_COLUMNS, PARAM_TABLA_COLUMNS
 
@@ -133,14 +134,17 @@ evento = st.dataframe(
 
 
 # INFORMACIÓN ADICIONAL DEL DEFECTO --------------------------------------------
-st.subheader("Detalle del defecto")
 filas_seleccionadas = evento.selection.rows
 
 if not filas_seleccionadas:
+    st.subheader("Detalle del defecto")
     st.info("Selecciona un defecto en la tabla (marca la casilla a la izquierda de una fila) para ver el detalle.")
     st.stop()
 
 row = filtered.iloc[filas_seleccionadas[0]]
+
+name_defect = re.sub(r'_([a-zA-Z0-9+-•])', r'<sub>\1</sub>', row.get("Defecto", "Desconocido"))
+st.markdown(f"<h3>Detalle del defecto {name_defect}:</h3>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns([1, 1, 1])
 
