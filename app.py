@@ -158,7 +158,7 @@ with col1:
                     xyz_data = f.read()
 
                 # Leyendas
-                elem_colors = {"B": "orange", "N": "blue", "C": "black"}
+                elem_colors = {"B": "orange", "N": "blue", "C": "black", "O": "red"}
                 elements_present = sorted(set(
                     line.split()[0] for line in xyz_data.strip().split("\n")[2:] if line.strip()
                 ))
